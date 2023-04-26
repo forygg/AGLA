@@ -400,7 +400,7 @@ double findDeterminant(SquareMatrix &A){
     return det;
 }
 
-void LeastSquareApproximation(Matrix A, ColumnVector b, int degree){
+Matrix LeastSquareApproximation(Matrix A, ColumnVector b, int degree){
     cout << "A:\n" << A;
     Matrix A_T = A.transposed();
     Matrix temp = A_T*A;
@@ -419,10 +419,20 @@ void LeastSquareApproximation(Matrix A, ColumnVector b, int degree){
 };
 
 int main(){
+#ifdef WIN32
+    FILE *pipe = _popen(GNUPLOT_NAME, "w");
+#else
+    FILE* pipe = popen(GNUPLOT_NAME, "w");
+#endif
+    if (pipe != NULL) {
     int m;
     cin >> m;
     ColumnVector t(m);
     ColumnVector b(m);
+    
+    fprintf(pipe, "%s\n", "plot '-' title 'Data' with points, '-' title 'Least " 
+            "Squares Approximation' with lines");
+        
     for (int i = 0; i < m; i++){
         cin >> t[i];
         cin >> b[i];
@@ -437,6 +447,23 @@ int main(){
             A[i][j] = A[i][j-1] * t[i];
         }
     }
-    LeastSquareApproximation(A, b, degree);
+    Matrix Answer = LeastSquareApproximation(A, b, degree);
+    for (int i = 0; i < m; i++) {
+         int x, y;
+         x = t[i];
+         y = b[i];
+         fprintf(pipe, "%d\t%d\n", x, y);
+    }
+    fprintf(pipe, "%s\n", "e");
+    for (double x = -10; x < 10; x+=0.1) {
+        double y = 0;
+        for (int i = 0; i < Answer.rows; i++)
+            y += Answer.myMatrix[i][0] * pow(x, i);
+        fprintf(pipe, "%f\t%f\n", x, y);
+    }
+        fprintf(pipe, "%s\n", "e");
+        fflush(pipe);
+        pclose(pipe);
+    }
 }
 
