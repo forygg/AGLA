@@ -1,0 +1,79 @@
+//Eugene Spiridonov CS#6
+//e.spiridonov@innopolis.university
+
+#include <iostream>
+#include <cmath>
+#include <iomanip>
+
+#ifdef WIN32
+#define GNUPLOT_NAME "C:\\gnuplot\\bin\\gnuplot -persist"
+#else
+#define GNUPLOT_NAME "gnuplot -persist"
+#endif
+
+using namespace std;
+
+double
+v(double time, double initial_number_of_victims, double initial_number_of_killers, double a1, double b1, double a2, double b2) {
+    return (initial_number_of_victims - a2 / b2) * cos(sqrt(a1 * a2) * time) -
+           (initial_number_of_killers - a1 / b1) * (sqrt(a2) * b1 / (b2 * sqrt(a1))) *
+           sin(sqrt(a1 * a2) * time) + a2 / b2;
+}
+
+double
+k(double time, double initial_number_of_victims, double initial_number_of_killers, double a1, double b1, double a2, double b2) {
+    return (initial_number_of_victims - a2 / b2) * (sqrt(a1) * b2) / (b1 * sqrt(a2)) * sin(sqrt(a1 * a2) * time) +
+           (initial_number_of_killers - a1 / b1) * cos(sqrt(a1 * a2) * time) + a1 / b1;
+}
+
+int main() {
+#ifdef WIN32
+    FILE *pipe = _popen(GNUPLOT_NAME, "w");
+#else
+    FILE *pipe = popen(GNUPLOT_NAME, "w");
+#endif
+
+    int v0, k0;
+    cin >> v0 >> k0;
+    double a1, b1, a2, b2;
+    cin >> a1 >> b1 >> a2 >> b2;
+    int T, N;
+    cin >> T >> N;
+    double times[N + 1], victims[N + 1], killers[N + 1];
+    double time = 0;
+    double coefficient = (double) T / N;
+    fprintf(pipe, "%s\n", "plot '-' title 'Data' with lines, '-' title 'Least "
+                          "Squares Approximation' with lines");
+    for (int i = 0; i <= N; i++) {
+        times[i] = time;
+        victims[i] = v(time, v0, k0, a1, b1, a2, b2);
+        killers[i] = k(time, v0, k0, a1, b1, a2, b2);
+        time += coefficient;
+    }
+
+    cout << "t:\n";
+    for (int i = 0; i <= N; i++) {
+        cout << fixed << setprecision(2) << times[i] << " ";
+    }
+    cout << "\n";
+
+    cout << "v:\n";
+    for (int i = 0; i <= N; i++) {
+        cout << victims[i] << " ";
+        fprintf(pipe, "%f\t%f\n", times[i], victims[i]);
+    }
+    cout << "\n";
+    fprintf(pipe, "%s\n", "e");
+
+    cout << "k:\n";
+    for (int i = 0; i <= N; i++) {
+        cout << killers[i] << " ";
+        fprintf(pipe, "%f\t%f\n", times[i], killers[i]);
+    }
+    cout << "\n";
+
+    fprintf(pipe, "%s\n", "e");
+    fflush(pipe);
+    pclose(pipe);
+    return 0;
+}
